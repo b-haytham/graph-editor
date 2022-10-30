@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
+import Button from "ui/Button";
 import { drawElements, fakeElements, Element as EditorElement } from './elements';
 
 type State = {
@@ -191,6 +192,12 @@ const Editor = ({ initialElements }: EditorProps) => {
       >
         restore
       </button>
+      <Button
+        style={{
+          position: "absolute", top: 200, left: 10,
+          zIndex: 55555,
+        }}
+      />
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', width: '100%', height: '100%' }}
