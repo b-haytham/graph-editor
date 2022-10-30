@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import { drawElements, fakeElements } from './elements';
+import { drawElements, fakeElements, Element as EditorElement } from './elements';
 
 type State = {
   width: string | number;
@@ -22,36 +22,37 @@ const DEFAULT_STATE: State = {
     y: 0
   }
 }
-const Editor = () => {
+
+type EditorProps = {
+  initialElements?: EditorElement[]
+}
+
+const Editor = ({ initialElements }: EditorProps) => {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [count, setCount] = useState(0);
-  const [elements, setElements] = useState(fakeElements);
+  const [elements, setElements] = useState<EditorElement[]>(initialElements ? initialElements : fakeElements);
   const [canvasCtx, setCanvasCtx] = useState<CanvasRenderingContext2D | null>(null)
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const observer = useRef(new ResizeObserver((e) => {
-    setState((prev) => ({ ...prev, width: e[0].contentRect.width, height: e[0].contentRect.height }))
-    // if (canvasRef.current) {
-    //   canvasRef.current.style.width = e[0].contentRect.width + "px";
-    //   canvasRef.current.style.height = e[0].contentRect.height + "px";
-    //   canvasRef.current.width = e[0].contentRect.width;
-    //   canvasRef.current.height = e[0].contentRect.height;
-    //   let ctx = canvasRef.current.getContext('2d');
-    //   // drawElements(ctx!, elements)
-    //   // setCanvasCtx(ctx);
-    //   canvasCtxRef.current = ctx;
-    //   canvasCtxRef.current?.translate(100, 100);
-    //   canvasCtxRef.current?.scale(0.5, .5);
-    //   //@ts-ignore
-    //   drawElements(canvasCtxRef.current, elements);
-    // }
-    // console.log(canvasCtx);
-    // if (canvasCtx) {
-    //   console.log("Ctx after resize = ", canvasCtx)     
-    //    drawElements(canvasCtx, elements);
-    // }
-  }));
+  // const observer = useRef(new ResizeObserver((e) => {
+  //   setState((prev) => ({
+  //     ...prev,
+  //     width: e[0].contentRect.width,
+  //     height: e[0].contentRect.height
+  //   }))
+  // }));
+
+  const observer = useRef<ResizeObserver | null>(null);
+  useEffect(() => {
+    observer.current = new ResizeObserver((e) => {
+      setState((prev) => ({
+        ...prev,
+        width: e[0].contentRect.width,
+        height: e[0].contentRect.height
+      }))
+    })
+  }, [])
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -66,12 +67,12 @@ const Editor = () => {
 
   useEffect(() => {
     if (containerRef.current) {
-      observer.current.observe(containerRef.current);
+      observer.current?.observe(containerRef.current);
     }
     return () => {
-      containerRef.current && observer.current.unobserve(containerRef.current);
+      containerRef.current && observer.current?.unobserve(containerRef.current);
     }
-  }, [containerRef.current])
+  }, [containerRef.current, observer.current])
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -115,7 +116,7 @@ const Editor = () => {
       setState((prev) => ({ ...prev, translate: { ...prev.translate, x: prev.translate.x + 10 } }));
     }
   }
-  
+
   const handleMouseDown = (e: MouseEvent) => {
     console.log(e);
   }
@@ -128,7 +129,7 @@ const Editor = () => {
     return () => {
       if (canvasRef.current) {
         canvasRef.current.removeEventListener('wheel', handleWheelEvent);
-      canvasRef.current.removeEventListener('mousedown', handleMouseDown);
+        canvasRef.current.removeEventListener('mousedown', handleMouseDown);
       }
     }
   }, [canvasRef.current])
@@ -145,7 +146,7 @@ const Editor = () => {
       drawElements(canvasCtxRef.current, elements);
     }
   }, [state, canvasCtxRef.current, canvasRef.current])
-  
+
   return (
     <div ref={containerRef} style={{ position: 'relative', height: "100%", width: '100%' }}>
       <p style={{ position: 'absolute', top: 10, left: 10 }}>Editor..</p>
@@ -185,7 +186,7 @@ const Editor = () => {
           zIndex: 55555,
         }}
         onClick={() => {
-          setState((prev) => ({...DEFAULT_STATE, width: prev.width, height: prev.height}));
+          setState((prev) => ({ ...DEFAULT_STATE, width: prev.width, height: prev.height }));
         }}
       >
         restore
