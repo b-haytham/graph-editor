@@ -1,3 +1,4 @@
+import * as React from 'react';
 export type ElementType = "arrow" | "circle" | "rect";
 
 export type ArrowOptions = {
@@ -45,6 +46,7 @@ export const fakeElements: Element[] = [
     }
   }
 ]
+
 
 export const drawElements = (ctx: CanvasRenderingContext2D, elements: Element[]) => {
   for (const el of elements) {
