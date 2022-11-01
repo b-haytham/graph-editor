@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import Button from "ui/Button";
+import ShapeSelect from "ui/ShapeSelect";
 import ZoomControl from "ui/ZoomControl";
+import RectIcon from "ui/Icons/RectIcon"
+import ArrowIcon from "ui/Icons/ArrowIcon"
+import CircleIcon from "ui/Icons/CircleIcon"
 import { drawElements, fakeElements, Element as EditorElement } from './elements';
 
 type State = {
@@ -32,7 +35,26 @@ type EditorProps = {
 
 const Editor = ({ zoomControl, initialElements }: EditorProps) => {
   const [state, setState] = useState<State>(DEFAULT_STATE);
-  const [count, setCount] = useState(0);
+  const [shapes, setShapes] = useState([
+    {
+      icon: <RectIcon className="h-10 w-10" />,
+      label: "rectangle",
+      selected: false,
+      onClick: () => console.log("rect clicked"),
+    },
+    {
+      icon: <CircleIcon className="h-10 w-10" />,
+      label: "circle",
+      selected: false,
+      onClick: () => console.log("circle clicked"),
+    },
+    {
+      icon: <ArrowIcon className="h-10 w-10" />,
+      label: "arrow",
+      selected: false,
+      onClick: () => console.log("arrow clicked"),
+    }
+  ])
   const [elements, setElements] = useState<EditorElement[]>(initialElements ? initialElements : fakeElements);
   const [canvasCtx, setCanvasCtx] = useState<CanvasRenderingContext2D | null>(null)
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -162,7 +184,22 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         onIncrement={() => setState((prev) => ({ ...prev, scale: prev.scale + .1 }))}
         onReset={() => setState((prev) => ({ ...prev, scale: 1 }))}
       />}
-      <p style={{ position: 'absolute', top: 10, left: 10 }}>Editor..</p>
+      <ShapeSelect
+        className="absolute top-5 left-5 z-50"
+        shapes={shapes}
+        onShapeClick={(shape) => {
+          setShapes((prev) => {
+            return prev.map(sh => {
+              if (sh.label == shape.label) {
+                return { ...sh, selected: !sh.selected }
+              } else {
+                return sh;
+              }
+            })
+          })
+        }}
+      />
+      <p className="absolute bottom-5 right-5 z-50">Editor..</p>
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', width: '100%', height: '100%' }}
