@@ -1,8 +1,8 @@
-import React from "react"
+import React from 'react';
 
 export type Shape = {
-  icon: React.ReactNode;
-  label: React.ReactNode;
-  selected: boolean;
-  // onClick: () => void;
-}
+    icon: React.ReactNode;
+    label: React.ReactNode;
+    selected: boolean;
+    // onClick: () => void;
+};

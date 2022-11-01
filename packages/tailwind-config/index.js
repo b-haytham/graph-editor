@@ -6,7 +6,6 @@ module.exports = {
     // include packages if not transpiling
     "../../packages/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
-  },
+  theme: {},
   plugins: [],
-}
+};
