@@ -7,6 +7,9 @@
   "scripts": {
     "lint": "TIMING=1 eslint \"**/*.ts*\""
   },
+  "dependencies": {
+    "ui": "*"
+  },
   "devDependencies": {
     "react": "18.2.0",
     "@types/react": "18.0.24",

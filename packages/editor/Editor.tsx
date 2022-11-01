@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Button from "ui/Button";
+import ZoomControl from "ui/ZoomControl";
 import { drawElements, fakeElements, Element as EditorElement } from './elements';
 
 type State = {
@@ -26,9 +27,10 @@ const DEFAULT_STATE: State = {
 
 type EditorProps = {
   initialElements?: EditorElement[]
+  zoomControl?: boolean
 }
 
-const Editor = ({ initialElements }: EditorProps) => {
+const Editor = ({ zoomControl, initialElements }: EditorProps) => {
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [count, setCount] = useState(0);
   const [elements, setElements] = useState<EditorElement[]>(initialElements ? initialElements : fakeElements);
@@ -150,54 +152,17 @@ const Editor = ({ initialElements }: EditorProps) => {
 
   return (
     <div ref={containerRef} style={{ position: 'relative', height: "100%", width: '100%' }}>
+      {zoomControl && <ZoomControl
+        className="absolute bottom-5 left-5 z-50"
+        value={Math.floor(state.scale * 100)}
+        onDecrement={() => setState((prev) => ({
+          ...prev,
+          scale: prev.scale - 0.1 <= 0 ? 0 : prev.scale - .1
+        }))}
+        onIncrement={() => setState((prev) => ({ ...prev, scale: prev.scale + .1 }))}
+        onReset={() => setState((prev) => ({ ...prev, scale: 1 }))}
+      />}
       <p style={{ position: 'absolute', top: 10, left: 10 }}>Editor..</p>
-      <button
-        style={{
-          position: "absolute",
-          top: 50,
-          left: 10,
-          zIndex: 55555,
-        }}
-        onClick={() => {
-          setState((prev) => ({ ...prev, scale: prev.scale + .1 }))
-        }}
-      >
-        inc {Math.floor(state.scale * 100)}
-      </button>
-
-      <button
-        style={{
-          position: "absolute",
-          top: 100,
-          left: 10,
-          zIndex: 55555,
-        }}
-        onClick={() => {
-          setState((prev) => ({ ...prev, scale: prev.scale - .1 }))
-        }}
-      >
-        dec {Math.floor(state.scale * 100)}
-      </button>
-
-      <button
-        style={{
-          position: "absolute",
-          top: 150,
-          left: 10,
-          zIndex: 55555,
-        }}
-        onClick={() => {
-          setState((prev) => ({ ...DEFAULT_STATE, width: prev.width, height: prev.height }));
-        }}
-      >
-        restore
-      </button>
-      <Button
-        style={{
-          position: "absolute", top: 200, left: 10,
-          zIndex: 55555,
-        }}
-      />
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', width: '100%', height: '100%' }}
