@@ -1,4 +1,5 @@
 import { HTMLAttributes } from 'react';
+import DeleteIcon from '../Icons/DeleteIcon';
 import MinusIcon from '../Icons/MinusIcon';
 import PlusIcon from '../Icons/PlusIcon';
 import ResetIcon from '../Icons/ResetIcon';
@@ -8,6 +9,7 @@ export interface ZoomControlProps extends HTMLAttributes<HTMLDivElement> {
     onIncrement?: () => void;
     onDecrement?: () => void;
     onReset?: () => void;
+    onDelete?: () => void;
 }
 
 export default function ZoomControl({
@@ -15,6 +17,7 @@ export default function ZoomControl({
     onDecrement,
     onIncrement,
     onReset,
+    onDelete,
     className,
     ...rest
 }: ZoomControlProps) {
@@ -33,6 +36,10 @@ export default function ZoomControl({
             </button>
             <button className="p-2 border-l" onClick={onReset}>
                 <ResetIcon className="h-3 w-3" />
+            </button>
+
+            <button className="p-2 border-l" onClick={onDelete}>
+                <DeleteIcon className="h-3 w-3" />
             </button>
         </div>
     );
