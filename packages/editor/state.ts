@@ -9,7 +9,7 @@ export type Selection = {
     initialPos?: Point;
 };
 
-export type ShapeType = 'rectange' | 'circle' | 'arrow';
+export type ShapeType = 'rectangle' | 'circle' | 'arrow';
 
 export type State = {
     width: string | number;
@@ -19,6 +19,8 @@ export type State = {
         x: number;
         y: number;
     };
+    pressing: boolean;
+    pressPosition?: Point;
     selectedShape?: ShapeType;
     currSelection?: Selection;
     nodes: Node[];
@@ -33,6 +35,8 @@ export const DEFAULT_STATE: State = {
         x: 0,
         y: 0,
     },
+    pressing: false,
+    pressPosition: undefined,
     currSelection: undefined,
     nodes: [],
     edges: [],

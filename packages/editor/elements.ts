@@ -23,7 +23,7 @@ export type ElementOptions = ArrowOptions | CircleOptions | RectOptions;
 
 export type Element = {
     type: ElementType;
-    options: ArrowOptions | CircleOptions | RectOptions;
+    options: ElementOptions;
 };
 
 export const fakeElements: Element[] = [
@@ -60,6 +60,7 @@ const drawElement = (ctx: CanvasRenderingContext2D, element: Element) => {
     switch (element.type) {
         case 'circle':
             opt = element.options as CircleOptions;
+            ctx.beginPath();
             ctx.arc(opt.cx, opt.cy, opt.r, 0, Math.PI * 2);
             ctx.stroke();
             break;
@@ -67,6 +68,12 @@ const drawElement = (ctx: CanvasRenderingContext2D, element: Element) => {
         case 'rect':
             opt = element.options as RectOptions;
             ctx.rect(opt.x, opt.y, opt.w, opt.h);
+            ctx.stroke();
+            break;
+        case 'arrow':
+            opt = element.options as ArrowOptions;
+            ctx.moveTo(opt.x1, opt.y1);
+            ctx.lineTo(opt.x2, opt.y2);
             ctx.stroke();
             break;
     }

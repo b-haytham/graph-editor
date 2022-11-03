@@ -7,7 +7,11 @@ import EditPanel from 'ui/EditPanel';
 import RectIcon from 'ui/Icons/RectIcon';
 import ArrowIcon from 'ui/Icons/ArrowIcon';
 import CircleIcon from 'ui/Icons/CircleIcon';
-import { Element as EditorElement } from './elements';
+import {
+    CircleOptions,
+    Element as EditorElement,
+    RectOptions,
+} from './elements';
 import { useEditor } from './hooks';
 import { getRelativeMousePosition } from './utils';
 
@@ -40,7 +44,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     const [editPanelOpen, setEditPanelOpen] = useState(false);
     const {
         state,
-        // contextRef,
+        contextRef,
         containerRef,
         canvasRef,
         zoomIn,
@@ -48,6 +52,12 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         zoomReset,
         translate,
         setSelectedShape,
+        setPressPosition,
+        refresh,
+        clearCanvas,
+        addEdge,
+        addNode,
+        findNode,
     } = useEditor();
 
     const handleWheelEvent = (e: WheelEvent) => {
@@ -75,12 +85,110 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-        console.log('Selected Shape ', state.selectedShape);
-        console.log('State ', state);
-        console.log('Mouse Down ', e);
-        console.log(
-            getRelativeMousePosition(state, { x: e.clientX, y: e.clientY })
-        );
+        console.log(getRelativeMousePosition(state, e));
+        setPressPosition(getRelativeMousePosition(state, e));
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+        const mousePosition = getRelativeMousePosition(state, e);
+        if (state.selectedShape && state.selectedShape == 'circle') {
+            refresh();
+            contextRef.current?.beginPath();
+            contextRef.current?.arc(
+                mousePosition.x,
+                mousePosition.y,
+                50,
+                0,
+                Math.PI * 2
+            );
+            contextRef.current?.stroke();
+            return;
+        }
+
+        if (state.selectedShape && state.selectedShape == 'rectangle') {
+            refresh();
+            const x = mousePosition.x - 100;
+            const y = mousePosition.y - 50;
+            const w = mousePosition.x + 100 - x;
+            const h = mousePosition.y + 50 - y;
+            contextRef.current?.rect(x, y, w, h);
+            contextRef.current?.stroke();
+            return;
+        }
+        if (state.pressPosition) {
+            if (state.selectedShape && state.selectedShape == 'arrow') {
+                refresh();
+                contextRef.current?.moveTo(
+                    state.pressPosition.x,
+                    state.pressPosition.y
+                );
+                contextRef.current?.lineTo(mousePosition.x, mousePosition.y);
+                contextRef.current?.stroke();
+            }
+        }
+
+        if (!state.selectedShape && !state.pressPosition) {
+            const foundElement = findNode(mousePosition);
+            console.log('FoundELEM >>>> ', foundElement);
+            if (canvasRef.current) {
+                if (foundElement.length > 0) {
+                    canvasRef.current.style.cursor = 'move';
+                } else {
+                    canvasRef.current.style.cursor = 'auto';
+                }
+            }
+        }
+    };
+    const handleMouseUp = (e: MouseEvent) => {
+        const mousePosition = getRelativeMousePosition(state, e);
+        if (state.selectedShape && state.selectedShape == 'circle') {
+            const opt: CircleOptions = {
+                cx: mousePosition.x,
+                cy: mousePosition.y,
+                r: 50,
+            };
+            addNode('circle', opt);
+            setPressPosition(null);
+            return;
+        }
+        if (state.selectedShape && state.selectedShape == 'rectangle') {
+            const x = mousePosition.x - 100;
+            const y = mousePosition.y - 50;
+            const w = mousePosition.x + 100 - x;
+            const h = mousePosition.y + 50 - y;
+            let opt: RectOptions = {
+                x,
+                y,
+                w,
+                h,
+            };
+
+            addNode('rect', opt);
+            setPressPosition(null);
+            return;
+        }
+        if (state.pressing && state.pressPosition) {
+            if (state.selectedShape && state.selectedShape == 'arrow') {
+                let opt = {
+                    x1: state.pressPosition.x,
+                    y1: state.pressPosition.y,
+                    x2: mousePosition.x,
+                    y2: mousePosition.y,
+                };
+                if (Math.abs(opt.x2 - opt.x1) > 5) {
+                    addEdge(opt);
+                }
+            }
+        }
+
+        if (
+            state.pressPosition &&
+            state.pressPosition &&
+            !state.selectedShape
+        ) {
+        }
+
+        setPressPosition(null);
     };
 
     useEffect(() => {
@@ -88,20 +196,23 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         if (canvas) {
             canvas.addEventListener('wheel', handleWheelEvent);
             canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
         }
         return () => {
             if (canvas) {
                 canvas.removeEventListener('wheel', handleWheelEvent);
                 canvas.removeEventListener('mousedown', handleMouseDown);
+                canvas.removeEventListener('mousemove', handleMouseMove);
+                canvas.removeEventListener('mouseup', handleMouseUp);
             }
         };
     }, [state]);
 
+    console.log(state);
+
     return (
-        <div
-            ref={containerRef}
-            style={{ position: 'relative', height: '100%', width: '100%' }}
-        >
+        <div ref={containerRef} className="relative h-full">
             {zoomControl && (
                 <ZoomControl
                     className="absolute bottom-5 left-5 z-50"
@@ -109,22 +220,41 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                     onDecrement={() => zoomOut()}
                     onIncrement={() => zoomIn()}
                     onReset={() => zoomReset()}
+                    onDelete={() => clearCanvas()}
                 />
             )}
             <ShapeSelect
                 className="absolute top-5 left-5 z-50"
                 shapes={shapes}
                 onShapeClick={(shape) => {
-                    setShapes((prev) => {
-                        return prev.map((sh) => {
-                            if (sh.label == shape.label) {
-                                return { ...sh, selected: !sh.selected };
-                            } else {
-                                return sh;
-                            }
-                        });
-                    });
-                    setSelectedShape(shape);
+                    const selectedShape = shapes.find(
+                        (sh) => sh.label == shape.label
+                    );
+                    if (selectedShape) {
+                        if (selectedShape.label == state.selectedShape) {
+                            setShapes((prev) =>
+                                prev.map((sh) => ({ ...sh, selected: false }))
+                            );
+                            setSelectedShape(null);
+                        } else {
+                            setShapes((prev) =>
+                                prev.map((sh) => ({
+                                    ...sh,
+                                    selected:
+                                        sh.label == shape.label ? true : false,
+                                }))
+                            );
+                            setSelectedShape(shape);
+                        }
+                    } else {
+                        setShapes((prev) =>
+                            prev.map((sh) => ({
+                                ...sh,
+                                selected: sh.label == shape.label,
+                            }))
+                        );
+                        setSelectedShape(shape);
+                    }
                 }}
             />
             <EditPanel

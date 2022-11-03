@@ -21,9 +21,31 @@ export const redraw = (
     drawElements(ctx, elements);
 };
 
-export const getRelativeMousePosition = (state: State, point: Point): Point => {
+export const getRelativeMousePosition = (
+    state: State,
+    e: MouseEvent
+): Point => {
+    const target = e.target as HTMLElement;
+    const targetBounds = target.getBoundingClientRect();
     return {
-        x: point.x - state.translate.x,
-        y: point.y - state.translate.y,
+        x: e.clientX - state.translate.x - targetBounds.x,
+        y: e.clientY - state.translate.y - targetBounds.y,
+    };
+};
+
+export const createTempCanvas = (
+    state: State
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } => {
+    const cvs = document.createElement('canvas');
+    const ctx = cvs.getContext('2d');
+    cvs.style.width == state.width.toString() + 'px';
+    cvs.style.height == state.height.toString() + 'px';
+    cvs.width = state.width as number;
+    cvs.height = state.height as number;
+    ctx?.scale(state.scale, state.scale);
+    ctx?.translate(state.translate.x, state.translate.y);
+    return {
+        canvas: cvs,
+        ctx: ctx!,
     };
 };
