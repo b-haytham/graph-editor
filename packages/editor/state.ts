@@ -6,6 +6,7 @@ export type Point = { x: number; y: number };
 export type Selection = {
     type: 'node' | 'edge';
     id: string;
+    data: Node | Edge;
 };
 
 export type ShapeType = 'rectangle' | 'circle' | 'arrow';

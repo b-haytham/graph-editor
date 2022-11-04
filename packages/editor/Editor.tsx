@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import ShapeSelect from 'ui/ShapeSelect';
 import ZoomControl from 'ui/ZoomControl';
 import EditPanel from 'ui/EditPanel';
@@ -13,7 +13,14 @@ import {
     RectOptions,
 } from './elements';
 import { useEditor } from './hooks';
-import { getRelativeMousePosition } from './utils';
+import {
+    getLeftNodeHandle,
+    getRelativeMousePosition,
+    getRightNodeHandle,
+    IsPointInNodeRange,
+} from './utils';
+import { createEdge } from './edge';
+import { createNode } from './node';
 
 type EditorProps = {
     initialElements?: EditorElement[];
@@ -61,6 +68,8 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         removeCurrSelection,
         findNode,
         setSelected,
+        setEdgeLabel,
+        setNodeLabel,
     } = useEditor();
 
     const handleWheelEvent = (e: WheelEvent) => {
@@ -160,7 +169,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                 cy: mousePosition.y,
                 r: 50,
             };
-            addNode('circle', opt);
+            addNode(createNode('circle', opt));
             setPressPosition(null);
             return;
         }
@@ -176,21 +185,45 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                 h,
             };
 
-            addNode('rectangle', opt);
+            addNode(createNode('rectangle', opt));
             setPressPosition(null);
             return;
         }
         if (state.pressing && state.pressPosition) {
             if (state.selectedShape && state.selectedShape == 'arrow') {
-                let opt = {
-                    x1: state.pressPosition.x,
-                    y1: state.pressPosition.y,
-                    x2: mousePosition.x,
-                    y2: mousePosition.y,
-                };
-                if (Math.abs(opt.x2 - opt.x1) > 5) {
-                    addEdge(opt);
+                let from = IsPointInNodeRange(
+                    state,
+                    state.nodes,
+                    state.pressPosition
+                );
+                let to = IsPointInNodeRange(state, state.nodes, mousePosition);
+                if (from && to && from.id !== to.id) {
+                    console.log({ from, to });
+                    const fromHandlePoint = getRightNodeHandle(from);
+                    const toHandlePoint = getLeftNodeHandle(to);
+                    let opt = {
+                        x1: fromHandlePoint.x,
+                        y1: fromHandlePoint.y,
+                        x2: toHandlePoint.x,
+                        y2: toHandlePoint.y,
+                    };
+                    const edge = createEdge(opt);
+                    edge.from = from.id;
+                    edge.to = to.id;
+                    addEdge(edge);
+                    setSelectedShape(null);
                 }
+                // } else {
+                //     let opt = {
+                //         x1: state.pressPosition.x,
+                //         y1: state.pressPosition.y,
+                //         x2: mousePosition.x,
+                //         y2: mousePosition.y,
+                //     };
+                //     if (Math.abs(opt.x2 - opt.x1) > 5) {
+                //         addEdge(createEdge(opt));
+                //     }
+                // }
             }
         }
 
@@ -229,6 +262,15 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             }
         };
     }, [state]);
+
+    const handleJsonDataChange = (e: ChangeEvent<HTMLTextAreaElement>) => {};
+    const handleLabelChange = (e: ChangeEvent<HTMLInputElement>) => {
+        if (state.currSelection!.type == 'edge') {
+            setEdgeLabel(state.currSelection!.id, e.target.value);
+        } else {
+            setNodeLabel(state.currSelection!.id, e.target.value);
+        }
+    };
 
     console.log('State', state);
 
@@ -283,8 +325,48 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                 open={editPanelOpen}
                 onVisibilityChange={() => setEditPanelOpen(!editPanelOpen)}
                 className="absolute top-5 right-5 z-50"
+                content={
+                    state.currSelection && (
+                        <div>
+                            <div className="mb-3">
+                                <label
+                                    htmlFor="label"
+                                    className="block mb-2 text-md font-bold text-gray-900"
+                                >
+                                    Label
+                                </label>
+                                <input
+                                    type="text"
+                                    id="label"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                    placeholder="Label"
+                                    value={state.currSelection.data.label}
+                                    onChange={handleLabelChange}
+                                    required
+                                />
+                            </div>
+                            <div className="mt-3">
+                                <label
+                                    htmlFor="message"
+                                    className="block mb-2 text-md font-bold text-gray-900"
+                                >
+                                    Json Data
+                                </label>
+                                <textarea
+                                    id="message"
+                                    rows={4}
+                                    className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="{}"
+                                    value={JSON.stringify(
+                                        state.currSelection.data.data
+                                    )}
+                                    onChange={(e) => {}}
+                                ></textarea>
+                            </div>
+                        </div>
+                    )
+                }
             />
-            <p className="absolute bottom-5 right-5 z-50">Editor..</p>
             <canvas
                 ref={canvasRef}
                 style={{ position: 'absolute', width: '100%', height: '100%' }}

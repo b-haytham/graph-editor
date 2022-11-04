@@ -40,6 +40,8 @@ export default function EditPanel({
                             Select Node to Edit
                         </p>
                     )}
+
+                    {content && <div className="p-2">{content}</div>}
                 </div>
             )}
         </div>

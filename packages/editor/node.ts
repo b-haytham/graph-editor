@@ -39,12 +39,23 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
             opt = node.options as RectOptions;
             ctx.rect(opt.x, opt.y, opt.w, opt.h);
             ctx.stroke();
+            ctx.font = '15px Arial';
+            ctx.fillText(node.label, opt.x, opt.y - 15);
+            ctx.restore();
             break;
         case 'circle':
             opt = node.options as CircleOptions;
             ctx.beginPath();
             ctx.arc(opt.cx, opt.cy, opt.r, 0, Math.PI * 2);
             ctx.stroke();
+            ctx.font = '15px Arial';
+            const text = ctx.measureText(node.label);
+            ctx.fillText(
+                node.label,
+                opt.cx - text.width / 2,
+                opt.cy - opt.r - 15
+            );
+            ctx.restore();
             break;
     }
 };

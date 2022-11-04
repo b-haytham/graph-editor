@@ -21,6 +21,7 @@ export const redraw = (
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctx.save();
     for (const node of state.nodes) {
         drawNode(ctx, node);
     }
@@ -35,15 +36,7 @@ export const redraw = (
             );
             if (edge) {
                 const { x2, x1, y2, y1 } = edge.options;
-                ctx.save();
                 ctx.strokeStyle = 'cyan';
-
-                // ctx.moveTo(x1 - 4, y1 - 4);
-                // ctx.lineTo(x2 + 4, y2 - 4 * 2);
-                // ctx.moveTo(x1 - 2.5, y1 - 2.5);
-                // ctx.lineTo(x2 - 2.5, y2 - 2.5);
-                // ctx.moveTo(x1 + 2.5, y1 + 2.5);
-                // ctx.lineTo(x2 + 2.5, y2 + 2.5);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -53,7 +46,6 @@ export const redraw = (
             );
             if (node && node.type == 'rectangle') {
                 let opt = node.options as RectOptions;
-                ctx.save();
                 ctx.strokeStyle = 'cyan';
                 ctx.strokeRect(
                     opt.x - 10,
@@ -64,7 +56,6 @@ export const redraw = (
                 ctx.restore();
             } else if (node && node.type == 'circle') {
                 let opt = node.options as CircleOptions;
-                ctx.save();
 
                 ctx.strokeStyle = 'cyan';
                 ctx.beginPath();
@@ -103,4 +94,70 @@ export const createTempCanvas = (
         canvas: cvs,
         ctx: ctx!,
     };
+};
+
+export const IsPointInNodeRange = (
+    state: State,
+    nodes: Node[],
+    point: Point
+): Node | null => {
+    const { ctx } = createTempCanvas(state);
+    let resNode: Node | null = null;
+    for (const node of nodes) {
+        if (node.type == 'circle') {
+            const opt = node.options as CircleOptions;
+
+            const circle = new Path2D();
+            circle.arc(opt.cx, opt.cy, opt.r + 5, 0, Math.PI * 2);
+            ctx.fill(circle);
+
+            if (ctx.isPointInPath(circle, point.x, point.y)) {
+                resNode = node;
+                break;
+            }
+        } else {
+            const opt = node.options as RectOptions;
+            const rect = new Path2D();
+            rect.rect(opt.x - 5, opt.y - 5, opt.w + 10, opt.h + 10);
+            ctx.fill(rect);
+            if (ctx.isPointInPath(rect, point.x, point.y)) {
+                resNode = node;
+                break;
+            }
+        }
+    }
+
+    return resNode;
+};
+
+export const getLeftNodeHandle = (node: Node): Point => {
+    if (node.type == 'rectangle') {
+        const opt = node.options as RectOptions;
+        return {
+            x: opt.x,
+            y: opt.y + opt.h / 2,
+        };
+    } else {
+        const opt = node.options as CircleOptions;
+        return {
+            x: opt.cx - opt.r,
+            y: opt.cy,
+        };
+    }
+};
+
+export const getRightNodeHandle = (node: Node): Point => {
+    if (node.type == 'rectangle') {
+        const opt = node.options as RectOptions;
+        return {
+            x: opt.x + opt.w,
+            y: opt.y + opt.h / 2,
+        };
+    } else {
+        const opt = node.options as CircleOptions;
+        return {
+            x: opt.cx + opt.r,
+            y: opt.cy,
+        };
+    }
 };

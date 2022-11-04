@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_STATE, Point, ShapeType, State } from './state';
-import { createTempCanvas, redraw } from './utils';
+import {
+    createTempCanvas,
+    getLeftNodeHandle,
+    getRightNodeHandle,
+    redraw,
+} from './utils';
 
 import { ArrowOptions, CircleOptions, RectOptions } from './elements';
 import { Shape } from 'ui/ShapeSelect/types';
@@ -108,64 +113,79 @@ export const useEditor = () => {
         }));
     }, []);
 
-    const addEdge = useCallback((opt: ArrowOptions) => {
+    const addEdge = useCallback((edge: Edge) => {
         setState((prev) => ({
             ...prev,
-            edges: [...prev.edges, createEdge(opt)],
+            edges: [...prev.edges, edge],
         }));
     }, []);
 
-    const addNode = useCallback(
-        (type: NodeType, opt: CircleOptions | RectOptions) => {
-            setState((prev) => ({
-                ...prev,
-                nodes: [...prev.nodes, createNode(type, opt)],
-            }));
-        },
-        []
-    );
+    const addNode = useCallback((node: Node) => {
+        setState((prev) => ({
+            ...prev,
+            nodes: [...prev.nodes, node],
+        }));
+    }, []);
 
     const moveCurrSelection = useCallback(
         (p: Point) => {
-            let nodes = state.nodes.map((n) => {
-                if (n.id == state.currSelection!.id) {
-                    if (n.type == 'rectangle') {
-                        const x = p.x - 100;
-                        const y = p.y - 50;
-                        const w = p.x + 100 - x;
-                        const h = p.y + 50 - y;
-                        return {
-                            ...n,
-                            options: {
-                                x,
-                                y,
-                                w,
-                                h,
-                            },
-                        };
-                    } else {
-                        return {
-                            ...n,
-                            options: {
-                                cx: p.x,
-                                cy: p.y,
-                                r: 50,
-                            },
-                        };
-                    }
+            const selectedNode = state.currSelection!.data;
+            const node = state.nodes.find((n) => n.id == selectedNode.id);
+            if (node) {
+                if (node.type == 'rectangle') {
+                    const x = p.x - 100;
+                    const y = p.y - 50;
+                    const w = p.x + 100 - x;
+                    const h = p.y + 50 - y;
+                    (node.options as RectOptions).x = x;
+                    (node.options as RectOptions).y = y;
+                    (node.options as RectOptions).w = w;
+                    (node.options as RectOptions).h = h;
                 } else {
-                    return n;
+                    (node.options as CircleOptions).cx = p.x;
+                    (node.options as CircleOptions).cy = p.y;
+                    (node.options as CircleOptions).r = 50;
+                }
+            }
+            const nodes = state.nodes.map((n) =>
+                node && n.id == node.id ? { ...node } : n
+            );
+            let edges = state.edges.map((edge) => {
+                if (edge.from && node && edge.from == node.id) {
+                    const start = getRightNodeHandle(node);
+                    return {
+                        ...edge,
+                        options: {
+                            ...edge.options,
+                            x1: start.x,
+                            y1: start.y,
+                        },
+                    };
+                } else if (edge.to && node && edge.to == node.id) {
+                    const end = getLeftNodeHandle(node);
+                    return {
+                        ...edge,
+                        options: {
+                            ...edge.options,
+                            x2: end.x,
+                            y2: end.y,
+                        },
+                    };
+                } else {
+                    return edge;
                 }
             });
             setState((prev) => ({
                 ...prev,
+                edges,
                 nodes,
             }));
         },
-        [state.currSelection, state.nodes]
+        [state.currSelection, state.edges, state.nodes]
     );
 
     const removeCurrSelection = useCallback(() => {
+        // delete edge and return
         if (state.currSelection && state.currSelection.type == 'edge') {
             const edges = state.edges.filter(
                 (e) => e.id !== state.currSelection!.id
@@ -175,10 +195,26 @@ export const useEditor = () => {
         }
 
         if (state.currSelection && state.currSelection.type == 'node') {
+            // delete selected node from nodes
             const nodes = state.nodes.filter(
                 (n) => n.id !== state.currSelection!.id
             );
-            setState((prev) => ({ ...prev, nodes, currSelection: undefined }));
+
+            // delete edges associated width the selected node
+            const edges = state.edges.filter(
+                (edge) =>
+                    !(
+                        edge.from == state.currSelection!.id ||
+                        edge.to == state.currSelection!.id
+                    )
+            );
+
+            setState((prev) => ({
+                ...prev,
+                nodes,
+                edges,
+                currSelection: undefined,
+            }));
             return;
         }
     }, [state.currSelection, state.edges, state.nodes]);
@@ -233,7 +269,11 @@ export const useEditor = () => {
                 if (ids.includes(edge.id)) {
                     setState((prev) => ({
                         ...prev,
-                        currSelection: { type: 'edge', id: edge.id },
+                        currSelection: {
+                            type: 'edge',
+                            id: edge.id,
+                            data: edge,
+                        },
                     }));
                     return;
                 }
@@ -243,13 +283,56 @@ export const useEditor = () => {
                 if (ids.includes(node.id)) {
                     setState((prev) => ({
                         ...prev,
-                        currSelection: { type: 'node', id: node.id },
+                        currSelection: {
+                            type: 'node',
+                            id: node.id,
+                            data: node,
+                        },
                     }));
                     return;
                 }
             }
         },
         [state.edges, state.nodes, state.currSelection]
+    );
+
+    const setEdgeLabel = useCallback(
+        (id: string, label: string) => {
+            const edges = state.edges.map((e) => ({
+                ...e,
+                label: e.id == id ? label : e.label,
+            }));
+
+            if (state.currSelection) {
+                const curr = {
+                    ...state.currSelection,
+                    data: { ...state.currSelection.data, label },
+                };
+                setState((prev) => ({ ...prev, currSelection: curr, edges }));
+            }
+        },
+        [state.currSelection, state.edges]
+    );
+
+    const setNodeLabel = useCallback(
+        (id: string, label: string) => {
+            const nodes = state.nodes.map((n) => ({
+                ...n,
+                label: n.id == id ? label : n.label,
+            }));
+            if (state.currSelection) {
+                const curr = {
+                    ...state.currSelection,
+                    data: { ...state.currSelection.data, label },
+                };
+                setState((prev) => ({
+                    ...prev,
+                    currSelection: curr,
+                    nodes,
+                }));
+            }
+        },
+        [state.currSelection, state.nodes]
     );
 
     return {
@@ -270,6 +353,8 @@ export const useEditor = () => {
         setSelected,
         moveCurrSelection,
         removeCurrSelection,
+        setNodeLabel,
+        setEdgeLabel,
         clearCanvas,
     };
 };
