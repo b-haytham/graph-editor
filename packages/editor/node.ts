@@ -9,7 +9,7 @@ export type NodeStyle = {};
 export type Node = {
     id: string;
     label: string;
-    data: any;
+    data: string;
     options: CircleOptions | RectOptions;
     type: NodeType;
     style: NodeStyle;
@@ -24,7 +24,7 @@ export const createNode = (
         id: uuid(),
         type,
         label: '',
-        data: {},
+        data: '{}',
         options,
         style: {},
         selected: false,
@@ -36,6 +36,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
     let opt: CircleOptions | RectOptions;
     switch (node.type) {
         case 'rectangle':
+            ctx.save();
             opt = node.options as RectOptions;
             ctx.rect(opt.x, opt.y, opt.w, opt.h);
             ctx.stroke();
@@ -44,6 +45,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
             ctx.restore();
             break;
         case 'circle':
+            ctx.save();
             opt = node.options as CircleOptions;
             ctx.beginPath();
             ctx.arc(opt.cx, opt.cy, opt.r, 0, Math.PI * 2);

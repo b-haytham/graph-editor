@@ -35,9 +35,13 @@ export const redraw = (
                 (e) => e.id == state.currSelection!.id
             );
             if (edge) {
+                ctx.save();
                 const { x2, x1, y2, y1 } = edge.options;
                 ctx.strokeStyle = 'cyan';
-                ctx.stroke();
+                const p = new Path2D();
+                p.moveTo(x1, y1);
+                p.lineTo(x2, y2);
+                ctx.stroke(p);
                 ctx.restore();
             }
         } else {
@@ -45,6 +49,7 @@ export const redraw = (
                 (n) => n.id == state.currSelection!.id
             );
             if (node && node.type == 'rectangle') {
+                ctx.save();
                 let opt = node.options as RectOptions;
                 ctx.strokeStyle = 'cyan';
                 ctx.strokeRect(
@@ -55,6 +60,7 @@ export const redraw = (
                 );
                 ctx.restore();
             } else if (node && node.type == 'circle') {
+                ctx.save();
                 let opt = node.options as CircleOptions;
 
                 ctx.strokeStyle = 'cyan';
