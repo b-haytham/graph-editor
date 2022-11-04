@@ -9,11 +9,13 @@
     "lint:fix": "TIMING=1 eslint \"**/*.ts*\" --fix"
   },
   "dependencies": {
-    "ui": "*"
+    "ui": "*",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
+    "@types/uuid": "^8.3.4",
     "eslint": "8.26.0",
     "eslint-config-custom": "*",
     "react": "18.2.0",

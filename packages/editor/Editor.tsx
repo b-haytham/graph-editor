@@ -57,7 +57,10 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         clearCanvas,
         addEdge,
         addNode,
+        moveCurrSelection,
+        removeCurrSelection,
         findNode,
+        setSelected,
     } = useEditor();
 
     const handleWheelEvent = (e: WheelEvent) => {
@@ -85,8 +88,12 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-        console.log(getRelativeMousePosition(state, e));
         setPressPosition(getRelativeMousePosition(state, e));
+        const foundElements = findNode(getRelativeMousePosition(state, e));
+        const foundIds = foundElements.map((e) => e.id);
+        if (foundElements.length > 0) {
+            setSelected(foundIds);
+        }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -129,7 +136,6 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
 
         if (!state.selectedShape && !state.pressPosition) {
             const foundElement = findNode(mousePosition);
-            console.log('FoundELEM >>>> ', foundElement);
             if (canvasRef.current) {
                 if (foundElement.length > 0) {
                     canvasRef.current.style.cursor = 'move';
@@ -137,6 +143,13 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                     canvasRef.current.style.cursor = 'auto';
                 }
             }
+        }
+        if (
+            !state.selectedShape &&
+            state.pressPosition &&
+            state.currSelection
+        ) {
+            moveCurrSelection(mousePosition);
         }
     };
     const handleMouseUp = (e: MouseEvent) => {
@@ -163,7 +176,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                 h,
             };
 
-            addNode('rect', opt);
+            addNode('rectangle', opt);
             setPressPosition(null);
             return;
         }
@@ -191,7 +204,14 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         setPressPosition(null);
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (state.currSelection && e.key == 'Delete') {
+            removeCurrSelection();
+        }
+    };
+
     useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
         let canvas = canvasRef.current;
         if (canvas) {
             canvas.addEventListener('wheel', handleWheelEvent);
@@ -200,6 +220,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             canvas.addEventListener('mouseup', handleMouseUp);
         }
         return () => {
+            window.removeEventListener('keydown', handleKeyDown);
             if (canvas) {
                 canvas.removeEventListener('wheel', handleWheelEvent);
                 canvas.removeEventListener('mousedown', handleMouseDown);
@@ -209,7 +230,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         };
     }, [state]);
 
-    console.log(state);
+    console.log('State', state);
 
     return (
         <div ref={containerRef} className="relative h-full">
@@ -255,6 +276,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                         );
                         setSelectedShape(shape);
                     }
+                    refresh();
                 }}
             />
             <EditPanel

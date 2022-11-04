@@ -4,9 +4,8 @@ import { Node } from './node';
 export type Point = { x: number; y: number };
 
 export type Selection = {
-    type: 'node | edge';
-    pressing: boolean;
-    initialPos?: Point;
+    type: 'node' | 'edge';
+    id: string;
 };
 
 export type ShapeType = 'rectangle' | 'circle' | 'arrow';
