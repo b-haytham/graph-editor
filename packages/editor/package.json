@@ -9,6 +9,8 @@
     "lint:fix": "TIMING=1 eslint \"**/*.ts*\" --fix"
   },
   "dependencies": {
+    "ace-builds": "^1.12.5",
+    "react-ace": "^10.1.0",
     "ui": "*",
     "uuid": "^9.0.0"
   },

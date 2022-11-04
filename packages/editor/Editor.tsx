@@ -22,6 +22,12 @@ import {
 import { createEdge } from './edge';
 import { createNode } from './node';
 
+import AceEditor from 'react-ace';
+
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/ext-language_tools';
+
 type EditorProps = {
     initialElements?: EditorElement[];
     zoomControl?: boolean;
@@ -70,6 +76,8 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         setSelected,
         setEdgeLabel,
         setNodeLabel,
+        setEdgeData,
+        setNodeData,
     } = useEditor();
 
     const handleWheelEvent = (e: WheelEvent) => {
@@ -263,7 +271,13 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         };
     }, [state]);
 
-    const handleJsonDataChange = (e: ChangeEvent<HTMLTextAreaElement>) => {};
+    const handleJsonDataChange = (value: string) => {
+        if (state.currSelection!.type == 'edge') {
+            setEdgeData(state.currSelection!.id, value);
+        } else {
+            setNodeData(state.currSelection!.id, value);
+        }
+    };
     const handleLabelChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (state.currSelection!.type == 'edge') {
             setEdgeLabel(state.currSelection!.id, e.target.value);
@@ -352,16 +366,18 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                                 >
                                     Json Data
                                 </label>
-                                <textarea
-                                    id="message"
-                                    rows={4}
-                                    className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="{}"
-                                    value={JSON.stringify(
-                                        state.currSelection.data.data
-                                    )}
-                                    onChange={(e) => {}}
-                                ></textarea>
+                                <AceEditor
+                                    mode={'json'}
+                                    theme="tomorrow"
+                                    fontSize={14}
+                                    value={state.currSelection.data.data}
+                                    onChange={handleJsonDataChange}
+                                    style={{ borderRadius: 10 }}
+                                    setOptions={{
+                                        tabSize: 4,
+                                        useWorker: false,
+                                    }}
+                                />
                             </div>
                         </div>
                     )

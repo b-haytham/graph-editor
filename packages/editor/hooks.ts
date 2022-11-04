@@ -314,6 +314,24 @@ export const useEditor = () => {
         [state.currSelection, state.edges]
     );
 
+    const setEdgeData = useCallback(
+        (id: string, data: string) => {
+            const edges = state.edges.map((e) => ({
+                ...e,
+                data: e.id == id ? data : e.data,
+            }));
+
+            if (state.currSelection) {
+                const curr = {
+                    ...state.currSelection,
+                    data: { ...state.currSelection.data, data },
+                };
+                setState((prev) => ({ ...prev, currSelection: curr, edges }));
+            }
+        },
+        [state.currSelection, state.edges]
+    );
+
     const setNodeLabel = useCallback(
         (id: string, label: string) => {
             const nodes = state.nodes.map((n) => ({
@@ -335,6 +353,26 @@ export const useEditor = () => {
         [state.currSelection, state.nodes]
     );
 
+    const setNodeData = useCallback(
+        (id: string, data: string) => {
+            const nodes = state.nodes.map((n) => ({
+                ...n,
+                data: n.id == id ? data : n.data,
+            }));
+            if (state.currSelection) {
+                const curr = {
+                    ...state.currSelection,
+                    data: { ...state.currSelection.data, data },
+                };
+                setState((prev) => ({
+                    ...prev,
+                    currSelection: curr,
+                    nodes,
+                }));
+            }
+        },
+        [state.currSelection, state.nodes]
+    );
     return {
         canvasRef,
         containerRef,
@@ -355,6 +393,8 @@ export const useEditor = () => {
         removeCurrSelection,
         setNodeLabel,
         setEdgeLabel,
+        setNodeData,
+        setEdgeData,
         clearCanvas,
     };
 };
