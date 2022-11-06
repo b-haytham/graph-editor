@@ -131,6 +131,8 @@ export const useEditor = () => {
         (p: Point) => {
             const selectedNode = state.currSelection!.data;
             const node = state.nodes.find((n) => n.id == selectedNode.id);
+            p.x = p.x / state.scale - state.translate.x;
+            p.y = p.y / state.scale - state.translate.y;
             if (node) {
                 if (node.type == 'rectangle') {
                     const x = p.x - 100;
@@ -181,7 +183,7 @@ export const useEditor = () => {
                 nodes,
             }));
         },
-        [state.currSelection, state.edges, state.nodes]
+        [state]
     );
 
     const removeCurrSelection = useCallback(() => {

@@ -80,8 +80,8 @@ export const getRelativeMousePosition = (
     const target = e.target as HTMLElement;
     const targetBounds = target.getBoundingClientRect();
     return {
-        x: e.clientX - state.translate.x - targetBounds.x,
-        y: e.clientY - state.translate.y - targetBounds.y,
+        x: e.clientX - targetBounds.x,
+        y: e.clientY - targetBounds.y,
     };
 };
 
@@ -165,5 +165,17 @@ export const getRightNodeHandle = (node: Node): Point => {
             x: opt.cx + opt.r,
             y: opt.cy,
         };
+    }
+};
+
+export const scaleOptions = (
+    options: CircleOptions | RectOptions,
+    scale: number
+) => {
+    if ('x' in options) {
+        options.w = options.w * scale;
+        options.h = options.h * scale;
+    } else {
+        options.r = options.r * scale;
     }
 };

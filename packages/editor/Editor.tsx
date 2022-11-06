@@ -81,6 +81,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     } = useEditor();
 
     const handleWheelEvent = (e: WheelEvent) => {
+        // e.preventDefault();
         if (e.deltaY < 0 && e.ctrlKey && e.altKey) {
             zoomOut();
         }
@@ -105,7 +106,17 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
+        // e.preventDefault();
+        console.log(getRelativeMousePosition(state, e));
         setPressPosition(getRelativeMousePosition(state, e));
+        console.log(
+            'IS NODE >>',
+            IsPointInNodeRange(
+                state,
+                state.nodes,
+                getRelativeMousePosition(state, e)
+            )
+        );
         const foundElements = findNode(getRelativeMousePosition(state, e));
         const foundIds = foundElements.map((e) => e.id);
         if (foundElements.length > 0) {
@@ -114,13 +125,14 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+        // e.preventDefault();
         const mousePosition = getRelativeMousePosition(state, e);
         if (state.selectedShape && state.selectedShape == 'circle') {
             refresh();
             contextRef.current?.beginPath();
             contextRef.current?.arc(
-                mousePosition.x,
-                mousePosition.y,
+                mousePosition.x / state.scale - state.translate.x,
+                mousePosition.y / state.scale - state.translate.y,
                 50,
                 0,
                 Math.PI * 2
@@ -131,10 +143,12 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
 
         if (state.selectedShape && state.selectedShape == 'rectangle') {
             refresh();
-            const x = mousePosition.x - 100;
-            const y = mousePosition.y - 50;
-            const w = mousePosition.x + 100 - x;
-            const h = mousePosition.y + 50 - y;
+            const px = mousePosition.x / state.scale - state.translate.x;
+            const py = mousePosition.y / state.scale - state.translate.y;
+            const x = px - 100;
+            const y = py - 50;
+            const w = px + 100 - x;
+            const h = py + 50 - y;
             contextRef.current?.rect(x, y, w, h);
             contextRef.current?.stroke();
             return;
@@ -143,10 +157,13 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             if (state.selectedShape && state.selectedShape == 'arrow') {
                 refresh();
                 contextRef.current?.moveTo(
-                    state.pressPosition.x,
-                    state.pressPosition.y
+                    state.pressPosition.x / state.scale - state.translate.x,
+                    state.pressPosition.y / state.scale - state.translate.y
                 );
-                contextRef.current?.lineTo(mousePosition.x, mousePosition.y);
+                contextRef.current?.lineTo(
+                    mousePosition.x / state.scale - state.translate.x,
+                    mousePosition.y / state.scale - state.translate.y
+                );
                 contextRef.current?.stroke();
             }
         }
@@ -170,11 +187,12 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         }
     };
     const handleMouseUp = (e: MouseEvent) => {
+        // e.preventDefault();
         const mousePosition = getRelativeMousePosition(state, e);
         if (state.selectedShape && state.selectedShape == 'circle') {
             const opt: CircleOptions = {
-                cx: mousePosition.x,
-                cy: mousePosition.y,
+                cx: mousePosition.x / state.scale - state.translate.x,
+                cy: mousePosition.y / state.scale - state.translate.y,
                 r: 50,
             };
             addNode(createNode('circle', opt));
@@ -182,10 +200,12 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             return;
         }
         if (state.selectedShape && state.selectedShape == 'rectangle') {
-            const x = mousePosition.x - 100;
-            const y = mousePosition.y - 50;
-            const w = mousePosition.x + 100 - x;
-            const h = mousePosition.y + 50 - y;
+            const px = mousePosition.x / state.scale - state.translate.x;
+            const py = mousePosition.y / state.scale - state.translate.y;
+            const x = px - 100;
+            const y = py - 50;
+            const w = px + 100 - x;
+            const h = py + 50 - y;
             let opt: RectOptions = {
                 x,
                 y,
@@ -221,17 +241,6 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                     addEdge(edge);
                     setSelectedShape(null);
                 }
-                // } else {
-                //     let opt = {
-                //         x1: state.pressPosition.x,
-                //         y1: state.pressPosition.y,
-                //         x2: mousePosition.x,
-                //         y2: mousePosition.y,
-                //     };
-                //     if (Math.abs(opt.x2 - opt.x1) > 5) {
-                //         addEdge(createEdge(opt));
-                //     }
-                // }
             }
         }
 
@@ -246,6 +255,7 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+        // e.preventDefault();
         if (state.currSelection && e.key == 'Delete') {
             removeCurrSelection();
         }
