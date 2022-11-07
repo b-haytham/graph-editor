@@ -9,20 +9,24 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "13.0.0",
+    "editor": "*",
+    "next": "13.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "ui": "*",
-    "editor": "*"
+    "ui": "*"
   },
   "devDependencies": {
     "@types/node": "18.11.7",
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
+    "autoprefixer": "^10.4.13",
     "eslint": "8.26.0",
     "eslint-config-custom": "*",
-    "tsconfig": "*",
     "eslint-config-next": "13.0.0",
+    "postcss": "^8.4.18",
+    "tailwind-config": "*",
+    "tailwindcss": "^3.2.1",
+    "tsconfig": "*",
     "typescript": "4.8.4"
   }
 }
