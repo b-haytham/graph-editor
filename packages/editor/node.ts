@@ -38,7 +38,8 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
         case 'rectangle':
             ctx.save();
             opt = node.options as RectOptions;
-            ctx.rect(opt.x, opt.y, opt.w, opt.h);
+            //@ts-ignore
+            ctx.roundRect(opt.x, opt.y, opt.w, opt.h, 20);
             ctx.stroke();
             ctx.font = '15px Arial';
             ctx.fillText(node.label, opt.x, opt.y - 15);

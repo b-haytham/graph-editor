@@ -1,5 +1,6 @@
+import { SELECTION_COLOR } from './constants';
 import { drawEdge, Edge } from './edge';
-import { CircleOptions, RectOptions } from './elements';
+import { ArrowOptions, CircleOptions, RectOptions } from './elements';
 import { drawNode, Node } from './node';
 import { Point, State } from './state';
 
@@ -18,9 +19,14 @@ export const redraw = (
     ctx.scale(state.scale, state.scale);
     ctx.translate(state.translate.x, state.translate.y);
 
+    // ctx.shadowColor = 'black';
+    // ctx.shadowBlur = 5;
+    // ctx.shadowOffsetX = 5;
+    // ctx.shadowOffsetY = 5
+    ctx.strokeStyle = 'rgba(0,0,0,.6)';
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    // ctx.lineCap = 'round';
+    // ctx.lineJoin = 'round';
     ctx.save();
     for (const node of state.nodes) {
         drawNode(ctx, node);
@@ -37,7 +43,7 @@ export const redraw = (
             if (edge) {
                 ctx.save();
                 const { x2, x1, y2, y1 } = edge.options;
-                ctx.strokeStyle = 'cyan';
+                ctx.strokeStyle = SELECTION_COLOR;
                 const p = new Path2D();
                 p.moveTo(x1, y1);
                 p.lineTo(x2, y2);
@@ -51,7 +57,7 @@ export const redraw = (
             if (node && node.type == 'rectangle') {
                 ctx.save();
                 let opt = node.options as RectOptions;
-                ctx.strokeStyle = 'cyan';
+                ctx.strokeStyle = SELECTION_COLOR;
                 ctx.strokeRect(
                     opt.x - 10,
                     opt.y - 10,
@@ -63,7 +69,7 @@ export const redraw = (
                 ctx.save();
                 let opt = node.options as CircleOptions;
 
-                ctx.strokeStyle = 'cyan';
+                ctx.strokeStyle = SELECTION_COLOR;
                 ctx.beginPath();
                 ctx.arc(opt.cx, opt.cy, opt.r + 10, 0, Math.PI * 2);
                 ctx.stroke();
@@ -80,8 +86,15 @@ export const getRelativeMousePosition = (
     const target = e.target as HTMLElement;
     const targetBounds = target.getBoundingClientRect();
     return {
-        x: e.clientX - targetBounds.x,
-        y: e.clientY - targetBounds.y,
+        x: (e.clientX - targetBounds.x) / state.scale - state.translate.x,
+        y: (e.clientY - targetBounds.y) / state.scale - state.translate.y,
+    };
+};
+
+export const getAbsoluteMousePosition = (state: State, point: Point): Point => {
+    return {
+        x: (point.x + state.translate.x) * state.scale,
+        y: (point.y + state.translate.y) * state.scale,
     };
 };
 
@@ -179,3 +192,23 @@ export const scaleOptions = (
         options.r = options.r * scale;
     }
 };
+
+export const drawCircle = (
+    ctx: CanvasRenderingContext2D,
+    options: CircleOptions
+) => {
+    ctx.fillStyle = 'while';
+    ctx.beginPath();
+    ctx.arc(options.cx, options.cy, 50, 0, Math.PI * 2);
+    ctx.stroke();
+};
+
+export const drawRectange = (
+    ctx: CanvasRenderingContext2D,
+    options: RectOptions
+) => {};
+
+export const drawArrow = (
+    ctx: CanvasRenderingContext2D,
+    options: ArrowOptions
+) => {};

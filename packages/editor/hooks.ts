@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DEFAULT_STATE, Point, ShapeType, State } from './state';
+import {
+    populateDefaultState,
+    DEFAULT_STATE,
+    Point,
+    ShapeType,
+    State,
+} from './state';
 import {
     createTempCanvas,
     getLeftNodeHandle,
@@ -9,8 +15,8 @@ import {
 
 import { ArrowOptions, CircleOptions, RectOptions } from './elements';
 import { Shape } from 'ui/ShapeSelect/types';
-import { createEdge, Edge } from './edge';
-import { createNode, NodeType, Node } from './node';
+import { Edge } from './edge';
+import { Node } from './node';
 
 export const useEditor = () => {
     const [state, setState] = useState<State>(DEFAULT_STATE);
@@ -19,7 +25,20 @@ export const useEditor = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const resizeObserver = useRef<ResizeObserver | null>(null);
 
+    const setDefaultState = () => {
+        const { nodes, edges } = populateDefaultState();
+        for (const n of nodes) {
+            addNode(n);
+        }
+        for (const e of edges) {
+            addEdge(e);
+        }
+    };
+
     useEffect(() => {
+        if (contextRef.current) {
+            setDefaultState();
+        }
         let container = containerRef.current;
         resizeObserver.current = new ResizeObserver((entries) => {
             const observedContainer = entries[0];
@@ -131,8 +150,8 @@ export const useEditor = () => {
         (p: Point) => {
             const selectedNode = state.currSelection!.data;
             const node = state.nodes.find((n) => n.id == selectedNode.id);
-            p.x = p.x / state.scale - state.translate.x;
-            p.y = p.y / state.scale - state.translate.y;
+            // p.x = p.x / state.scale - state.translate.x;
+            // p.y = p.y / state.scale - state.translate.y;
             if (node) {
                 if (node.type == 'rectangle') {
                     const x = p.x - 100;
@@ -263,7 +282,19 @@ export const useEditor = () => {
 
     const setSelected = useCallback(
         (ids: string[]) => {
-            if (state.currSelection && ids.includes(state.currSelection.id)) {
+            if (ids.length == 0) {
+                setState((prev) => ({
+                    ...prev,
+                    nodes: prev.nodes.map((n) => ({ ...n, selected: false })),
+                    edges: prev.edges.map((n) => ({ ...n, selected: false })),
+                    currSelection: undefined,
+                }));
+                return;
+            }
+            if (
+                (state.currSelection && ids.includes(state.currSelection.id)) ||
+                ids.length == 0
+            ) {
                 setState((prev) => ({ ...prev, currSelection: undefined }));
                 return;
             }
@@ -271,6 +302,9 @@ export const useEditor = () => {
                 if (ids.includes(edge.id)) {
                     setState((prev) => ({
                         ...prev,
+                        edges: prev.edges.map((e) =>
+                            e.id == edge.id ? { ...e, selected: true } : e
+                        ),
                         currSelection: {
                             type: 'edge',
                             id: edge.id,
@@ -285,6 +319,9 @@ export const useEditor = () => {
                 if (ids.includes(node.id)) {
                     setState((prev) => ({
                         ...prev,
+                        nodes: prev.nodes.map((n) =>
+                            n.id == node.id ? { ...n, selected: true } : n
+                        ),
                         currSelection: {
                             type: 'node',
                             id: node.id,

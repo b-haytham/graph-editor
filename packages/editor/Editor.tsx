@@ -14,6 +14,7 @@ import {
 } from './elements';
 import { useEditor } from './hooks';
 import {
+    getAbsoluteMousePosition,
     getLeftNodeHandle,
     getRelativeMousePosition,
     getRightNodeHandle,
@@ -22,11 +23,15 @@ import {
 import { createEdge } from './edge';
 import { createNode } from './node';
 
+import { enableRoundRect } from './roundRect';
+
 import AceEditor from 'react-ace';
 
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-github';
 import 'ace-builds/src-noconflict/ext-language_tools';
+
+enableRoundRect();
 
 type EditorProps = {
     initialElements?: EditorElement[];
@@ -107,69 +112,92 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
 
     const handleMouseDown = (e: MouseEvent) => {
         // e.preventDefault();
-        console.log(getRelativeMousePosition(state, e));
-        setPressPosition(getRelativeMousePosition(state, e));
+        const mousePosition = getRelativeMousePosition(state, e);
+        console.log(mousePosition);
+        // setPressPosition({
+        //     x: (mousePosition.x + state.translate.x) * state.scale,
+        //     y: (mousePosition.y + state.translate.y) * state.scale,
+        // });
+        setPressPosition(mousePosition);
         console.log(
             'IS NODE >>',
             IsPointInNodeRange(
                 state,
                 state.nodes,
-                getRelativeMousePosition(state, e)
+                // getRelativeMousePosition(state, e)
+                {
+                    x: (mousePosition.x + state.translate.x) * state.scale,
+                    y: (mousePosition.y + state.translate.y) * state.scale,
+                }
             )
         );
-        const foundElements = findNode(getRelativeMousePosition(state, e));
+        const foundElements = findNode({
+            x: (mousePosition.x + state.translate.x) * state.scale,
+            y: (mousePosition.y + state.translate.y) * state.scale,
+        });
         const foundIds = foundElements.map((e) => e.id);
         if (foundElements.length > 0) {
             setSelected(foundIds);
+        } else {
+            setSelected([]);
         }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
         // e.preventDefault();
         const mousePosition = getRelativeMousePosition(state, e);
-        if (state.selectedShape && state.selectedShape == 'circle') {
+        if (
+            contextRef.current &&
+            state.selectedShape &&
+            state.selectedShape == 'circle'
+        ) {
             refresh();
-            contextRef.current?.beginPath();
-            contextRef.current?.arc(
-                mousePosition.x / state.scale - state.translate.x,
-                mousePosition.y / state.scale - state.translate.y,
+            contextRef.current.beginPath();
+            contextRef.current.arc(
+                mousePosition.x,
+                mousePosition.y,
                 50,
                 0,
                 Math.PI * 2
             );
-            contextRef.current?.stroke();
+            contextRef.current.stroke();
             return;
         }
 
-        if (state.selectedShape && state.selectedShape == 'rectangle') {
+        if (
+            contextRef.current &&
+            state.selectedShape &&
+            state.selectedShape == 'rectangle'
+        ) {
             refresh();
-            const px = mousePosition.x / state.scale - state.translate.x;
-            const py = mousePosition.y / state.scale - state.translate.y;
+            const px = mousePosition.x;
+            const py = mousePosition.y;
             const x = px - 100;
             const y = py - 50;
             const w = px + 100 - x;
             const h = py + 50 - y;
-            contextRef.current?.rect(x, y, w, h);
-            contextRef.current?.stroke();
+            // contextRef.current.fillStyle = 'white';
+            //@ts-ignore
+            contextRef.current.roundRect(x, y, w, h, 20);
+            contextRef.current.stroke();
             return;
         }
         if (state.pressPosition) {
             if (state.selectedShape && state.selectedShape == 'arrow') {
                 refresh();
                 contextRef.current?.moveTo(
-                    state.pressPosition.x / state.scale - state.translate.x,
-                    state.pressPosition.y / state.scale - state.translate.y
+                    state.pressPosition.x,
+                    state.pressPosition.y
                 );
-                contextRef.current?.lineTo(
-                    mousePosition.x / state.scale - state.translate.x,
-                    mousePosition.y / state.scale - state.translate.y
-                );
+                contextRef.current?.lineTo(mousePosition.x, mousePosition.y);
                 contextRef.current?.stroke();
             }
         }
 
         if (!state.selectedShape && !state.pressPosition) {
-            const foundElement = findNode(mousePosition);
+            const foundElement = findNode(
+                getAbsoluteMousePosition(state, mousePosition)
+            );
             if (canvasRef.current) {
                 if (foundElement.length > 0) {
                     canvasRef.current.style.cursor = 'move';
@@ -191,8 +219,8 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         const mousePosition = getRelativeMousePosition(state, e);
         if (state.selectedShape && state.selectedShape == 'circle') {
             const opt: CircleOptions = {
-                cx: mousePosition.x / state.scale - state.translate.x,
-                cy: mousePosition.y / state.scale - state.translate.y,
+                cx: mousePosition.x,
+                cy: mousePosition.y,
                 r: 50,
             };
             addNode(createNode('circle', opt));
@@ -200,8 +228,8 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             return;
         }
         if (state.selectedShape && state.selectedShape == 'rectangle') {
-            const px = mousePosition.x / state.scale - state.translate.x;
-            const py = mousePosition.y / state.scale - state.translate.y;
+            const px = mousePosition.x;
+            const py = mousePosition.y;
             const x = px - 100;
             const y = py - 50;
             const w = px + 100 - x;
@@ -222,9 +250,13 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                 let from = IsPointInNodeRange(
                     state,
                     state.nodes,
-                    state.pressPosition
+                    getAbsoluteMousePosition(state, state.pressPosition)
                 );
-                let to = IsPointInNodeRange(state, state.nodes, mousePosition);
+                let to = IsPointInNodeRange(
+                    state,
+                    state.nodes,
+                    getAbsoluteMousePosition(state, mousePosition)
+                );
                 if (from && to && from.id !== to.id) {
                     console.log({ from, to });
                     const fromHandlePoint = getRightNodeHandle(from);
