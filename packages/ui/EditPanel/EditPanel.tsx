@@ -1,3 +1,4 @@
+'use client';
 import clsx from 'clsx';
 import React, { HTMLAttributes } from 'react';
 import ArrowBackwardIcon from '../Icons/ArrowBackward';

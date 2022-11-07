@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import ShapeSelect from 'ui/ShapeSelect';
 import ZoomControl from 'ui/ZoomControl';
 import EditPanel from 'ui/EditPanel';
@@ -25,11 +26,22 @@ import { createNode } from './node';
 
 import { enableRoundRect } from './roundRect';
 
-import AceEditor from 'react-ace';
+const Code = dynamic(
+    async () => {
+        const ace = await import('react-ace');
+        require('ace-builds/src-noconflict/mode-json');
+        require('ace-builds/src-noconflict/theme-github');
+        require('ace-builds/src-noconflict/ext-language_tools');
+        return ace;
+    },
+    { ssr: false }
+);
 
-import 'ace-builds/src-noconflict/mode-json';
-import 'ace-builds/src-noconflict/theme-github';
-import 'ace-builds/src-noconflict/ext-language_tools';
+// import AceEditor from 'react-ace';
+//
+// import 'ace-builds/src-noconflict/mode-json';
+// import 'ace-builds/src-noconflict/theme-github';
+// import 'ace-builds/src-noconflict/ext-language_tools';
 
 enableRoundRect();
 
@@ -39,6 +51,7 @@ type EditorProps = {
 };
 
 const Editor = ({ zoomControl, initialElements }: EditorProps) => {
+    const [rendered, setRendered] = useState(false);
     const [shapes, setShapes] = useState([
         {
             icon: <RectIcon className="h-10 w-10" />,
@@ -84,6 +97,10 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
         setEdgeData,
         setNodeData,
     } = useEditor();
+
+    useEffect(() => {
+        setRendered(true);
+    }, []);
 
     const handleWheelEvent = (e: WheelEvent) => {
         // e.preventDefault();
@@ -294,7 +311,9 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
     };
 
     useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
+        // if (typeof window !== 'undefined') {
+        //     window.addEventListener('keydown', handleKeyDown);
+        // }
         let canvas = canvasRef.current;
         if (canvas) {
             canvas.addEventListener('wheel', handleWheelEvent);
@@ -303,7 +322,9 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
             canvas.addEventListener('mouseup', handleMouseUp);
         }
         return () => {
-            window.removeEventListener('keydown', handleKeyDown);
+            // if (typeof window !== 'undefined') {
+            //     window.removeEventListener('keydown', handleKeyDown);
+            // }
             if (canvas) {
                 canvas.removeEventListener('wheel', handleWheelEvent);
                 canvas.removeEventListener('mousedown', handleMouseDown);
@@ -408,18 +429,20 @@ const Editor = ({ zoomControl, initialElements }: EditorProps) => {
                                 >
                                     Json Data
                                 </label>
-                                <AceEditor
-                                    mode={'json'}
-                                    theme="tomorrow"
-                                    fontSize={14}
-                                    value={state.currSelection.data.data}
-                                    onChange={handleJsonDataChange}
-                                    style={{ borderRadius: 10 }}
-                                    setOptions={{
-                                        tabSize: 4,
-                                        useWorker: false,
-                                    }}
-                                />
+                                {rendered && (
+                                    <Code
+                                        mode={'json'}
+                                        theme="tomorrow"
+                                        fontSize={14}
+                                        value={state.currSelection.data.data}
+                                        onChange={handleJsonDataChange}
+                                        style={{ borderRadius: 10 }}
+                                        setOptions={{
+                                            tabSize: 4,
+                                            useWorker: false,
+                                        }}
+                                    />
+                                )}
                             </div>
                         </div>
                     )
